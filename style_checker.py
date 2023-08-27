@@ -227,7 +227,7 @@ class BlocksChecker:
                 output["BlocksChecker"].append(f"Line {line_count}: Suspicious block start: {stripped_line}")
                 self.error_count += 1
                 
-            spacing_check = re.search(r'\S\s\{', stripped_line)
+            spacing_check = re.search(r'(\w|\))\s\{', stripped_line)
 
             if not spacing_check:
                 output["BlocksChecker"].append(f"Line {line_count}: Opening curly brace should be preceded by one space \n{stripped_line}")
@@ -244,9 +244,13 @@ class BlocksChecker:
 class HorizontalSpaceChecker:
     def __init__(self):
         self.error_count = 0
-        self.word_or_num = r'(\w|\d)'
-        self.rel_assign_op = r'(<=|==|!=|>=|\+=|-=|\*=|/=|%=|&=|\|=|^=|<<=|>>=)'
-        self.found_dup = False
+        self.word_or_num =   r'(\w|\d)'
+        self.relational_op = r'(<=|==|!=|>=|(?<!<)<(?!<|=)|(?<!<)<(?!<|=)|(?<!>)>(?!>|))'
+        self.assignment_op = r'(\+\+|\+=|-=|\*=|/=|%=|&=|\|=|\^=|~=|<<=|>>=|(?<!\+)(?<!-)(?<!\*)(?<!/)(?<!%)(?<!&)(?<!\|)(?<!\^)(?<!~)(?<!<)(?<!>)(?<!<)(?<!>)(?<!=)=(?!=))'
+        self.arithmetic_op = r'(?<!\+)\+(?!=)(?!\+)|(?<!\-)-(?!=)(?!-)'
+        self.logical_op =    r'(\&\&|\|\|)'
+        self.bitwise_op =   r'(?<!\|)\|(?!\|)|\^(?!=)|<<(?!=)|>>(?!=)'
+        self.address_op =   r'(?<!&)&(?!&)'
         self.start_exceptions = [
             r'/\*', r'\*', r'#define', r'#include'
         ]
@@ -257,23 +261,23 @@ class HorizontalSpaceChecker:
         ]
         self.lr_spacing = {
             # Check:            No space on either side | One or more space on the right | One or more space on the left
-            "pointer":          (r'(\w|\d)\*(\w|\d)|(\w|\d)\*\s+(\w|\d)|(\w|\d)\s+\*(\w|\d)'),
-            "rel_assignment":   (f'(?<!\s){self.rel_assign_op}(?!\s)|(?<!\s){self.rel_assign_op}\s+|\s+{self.rel_assign_op}(?!\s)'),
-             "arithmetic":       (r'(?<!\s)[\+\-\/](?!\s)|(?<!\s)[\+\-\/]-/]\s+(\w|\d)|(\w|\d)[\+\-\/](?!\s)'),
-            "logical":          (r'(?<!\s)(\&\&|\|\|)(?!\s)|(\&\&(?!\s)|(\w|\d)(\&\&|\|\|)\s+|\s+(\&\&|\|\|)(?!\s)'),
-            "bitwise":          (r'(?<!\s)(&|\||^|<<|>>)(?!\s)|(?<!\s)(&|\||^|<<|>>)\s+(\w|\d)|(\w|\d)(&|\||^|<<|>>)(?!\s)'),
-            # "ternary_operator": (r'(\w|\d|\))[\?:](\w|\d|\())|(\w|\d|\))\s+[\?:](\w|\d|\())|(\w|\d|\))[\?:]\s+(\w|\d|\())')
+            "relational":       (f'(?<!\s){self.relational_op}(?!\s)|(?<!\s){self.relational_op}\s+|\s+{self.relational_op}(?!\s)'),
+            "assignment":       (f'(?<!\s){self.assignment_op}(?!\s)|(?<!\s){self.assignment_op}\s+|\s+{self.assignment_op}(?!\s)'),
+            "arithmetic":       (f'(?<!\s){self.arithmetic_op}(?!\s)|(?<!\s){self.arithmetic_op}\s+|\s+{self.arithmetic_op}(?!\s)'),
+            "logical":          (f'(?<!\s){self.logical_op}(?!\s)|(?<!\s){self.logical_op}\s+|\s+{self.logical_op}(?!\s)'),
+            "bitwise":          (f'(?<!\s){self.bitwise_op}(?!\s)|(?<!\s){self.bitwise_op}\s+|\s+{self.bitwise_op}(?!\s)'),
+            "address_bit":      (f'(?<!\s){self.address_op}(?!\s)|(?<!\s){self.address_op}\s+'),
+            "pointer":          (r'(?<!\s)\*+(?!\s)|(?<!\s)\*+\s+|\s+\*+(?!\s)'),
         }
         self.over_spacing = {
             # Check:        Two or more space on the right | Two or more space on the left
-            "pointer":          (r'(\w|\d)\s{2,}\*\s{2,}(\w|\d)'),
-            "relational":       (r'(\w|\d)\s{2,}(<|<=|==|!=|>=|>)(\w|\d)\s{2,})'),
-            "assignment":       (r'(\w|\d)\s{2,}(=|\+=|-=|\*=|/=|%=|&=|\|=|^=|<<=|>>=)\s{2,}(\w|\d))'),
-            "arithmetic":       (r'(\w|\d)\s{2,}[\+\-\/]\s{2,}(\w|\d)'),
+            "relational":       (f'(\w|\d)\s{{2,}}{self.relational_op}\s{{2,}}(\w|\d))'),
+            "assignment":       (f'(\w|\d)\s{{2,}}{self.assignment_op}\s{{2,}}(\w|\d))'),
+            "arithmetic":       (f'(\w|\d)\s{{2,}}{self.arithmetic_op}\s{{2,}}(\w|\d)'),
             "logical":          (r'(\w|\d)\s{2,}(\&\&|\|\|)\s{2,}(\w|\d)'),
-            "bitwise":          (r'(\w|\d)(&|\||^|<<|>>)(\w|\d)'),
-            "ternary_operator": (r'(\w|\d|\))\s{2,}[\?:]\s{2,}(\w|\d|\())'),
-            "conds_loops":      (r'(if|else if|for|while|do)\s{2,}(\(|\{)')  
+            "bitwise":          (f'(\w|\d)\s{{2,}}{self.bitwise_op}\s{{2,}}(\w|\d)'),
+            "conds_loops":      (r'(if|else if|for|while|do)\s{2,}(\(|\{)'),
+            "pointer":          (r'(\w|\d)\s{2,}\*+\s{2,}(\w|\d)'),
         }
         self.other_rules = {
             "logical_not": (r'!\s+\w'),
@@ -292,9 +296,9 @@ class HorizontalSpaceChecker:
 
         for rule in self.spacing_rules:
             for pattern_name, pattern in rule.items():
-                if pattern_name == "last_op":
-                    if re.search(f'\s{self.rel_assign_op}\s', line):
-                        return
+                # if pattern_name == "last_op":
+                #     if re.search(f'\s{self.rel_assign_op}\s', line):
+                #         return
                 
                 match = re.search(pattern, line)
                 if match:
