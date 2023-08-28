@@ -10,7 +10,7 @@ class BaseChecker:
             line_count += 1
             stripped_line = line.strip()
             for checker in self.checkers:
-                checker.check_styles(line, stripped_line, line_count, output, error_count)
+                checker.check_styles(line, stripped_line, line_count, output)
         for checker in self.checkers:
             checker.count_errors(error_count)
 
@@ -22,7 +22,7 @@ class NameCommentChecker:
         self.email_found = False
         self.comment_added = False
 
-    def check_styles(self, line, stripped_line, line_count, output, error_count):
+    def check_styles(self, line, stripped_line, line_count, output):
         # Skip if past the first 10 lines  
         if line_count > 10 or self.comment_added:
             return
@@ -38,15 +38,15 @@ class NameCommentChecker:
 
         # Check for different cases
         if self.author_found and self.email_found and self.comment_found:
-            output["NameCommentChecker"].append("Line " + str(line_count) + ": Name comment found")
+            output["NameCommentChecker"].append(f"Line {line_count}: Name comment found")
             self.comment_added = True
             return True
         if self.author_found and self.comment_found:
-            output["NameCommentChecker"].append("Line " + str(line_count) + ": Name comment found, but email is missing")
+            output["NameCommentChecker"].append(f"Line {line_count}: Name comment found, but email is missing")
             self.comment_added = True
             return True
         if self.email_found and self.comment_found:
-            output["NameCommentChecker"].append("Line " + str(line_count) + ": Name comment found, but did not include 'Author'")
+            output["NameCommentChecker"].append(f"Line {line_count}: Name comment found, but did not include 'Author'")
             self.comment_added = True
             return True
         if line_count == 10 and self.author_found == False and self.email_found == False and self.comment_found == False:
@@ -55,21 +55,15 @@ class NameCommentChecker:
     
     def count_errors(self, error_count):
         if self.comment_added:
-            error_count["NameCommentChecker"].append("Name Comment Errors: " + str(self.error_count))
+            error_count["NameCommentChecker"].append(f"Name Comment Errors: {self.error_count}")
         else:
             error_count["NameCommentChecker"].append("Name Comment Error: 1 Error - No Name Comment Found")
 
 class NamingChecker:
     def __init__(self):
         self.error_count = 0
-        self.block_starters = [
-            r'\b(if|else|for|while|do|switch)\b',
-            r'\b(int|float|char|void|double|bool|long|short)\s+\w+\s*\(.*\)\s*{',
-            r'\b(const\s+)?\b(int|float|char|void|double|bool|long|short)(\s+\*|\s*)\s+\w+\s*\[\]',
-            r'\b(enum|struct)\s+\w+\s*{'
-        ]
 
-    def check_styles(self, line, stripped_line, line_count, output, error_count):
+    def check_styles(self, line, stripped_line, line_count, output):
         struct_union_match = re.match(r'\b(struct|union)\s+(\w+)', stripped_line)
         if struct_union_match:
             struct_union_name = struct_union_match.group(2)
@@ -101,7 +95,7 @@ class LineLengthChecker:
     def __init__(self):
         self.error_count = 0
 
-    def check_styles(self, line, stripped_line, line_count, output, error_count):
+    def check_styles(self, line, stripped_line, line_count, output):
         if len(line) > 120:
             output["LineLengthChecker"].append(f"Line {line_count}: A single line should never exceed 120 characters in a line including indentation\n" + line.rstrip('\n'))
             self.error_count += 1
@@ -118,7 +112,7 @@ class IncludeDirectiveChecker:
         self.custom_headers = []
         self.state = "standard"
 
-    def check_styles(self, line, stripped_line, line_count, output, error_count):
+    def check_styles(self, line, stripped_line, line_count, output):
         if stripped_line == "" or line_count > 100:
             return
         if line_count == 100:
@@ -141,6 +135,7 @@ class IncludeDirectiveChecker:
         if self.std_headers != sorted(self.std_headers):
             output["IncludeDirectiveChecker"].append("Standard library headers are not in alphabetical order")
             self.error_count += 1
+
         if self.custom_headers != sorted(self.custom_headers):
             output["IncludeDirectiveChecker"].append("Custom headers not in alphabetical order.")
             self.error_count += 1
@@ -156,7 +151,7 @@ class IndentationChecker:
         self.switch_found = False
         self.case_found = False
 
-    def check_styles(self, line, stripped_line, line_count, output, error_count):
+    def check_styles(self, line, stripped_line, line_count, output):
         if stripped_line == "":
             return
         if stripped_line.startswith("/*"):
@@ -211,7 +206,7 @@ class BlocksChecker:
             r'\b(enum|struct)\s+\w+\s*{'
         ]
 
-    def check_styles(self, line, stripped_line, line_count, output, error_count):
+    def check_styles(self, line, stripped_line, line_count, output):
         if "typedef" in stripped_line:
             match = re.search(r'\btypedef\b\s+\w+\s+(\w+)', stripped_line)
             if match:
@@ -293,7 +288,7 @@ class HorizontalSpaceChecker:
         }
         self.spacing_rules = [self.lr_spacing, self.over_spacing, self.other_rules]
 
-    def check_styles(self, line, stripped_line, line_count, output, error_count):
+    def check_styles(self, line, stripped_line, line_count, output):
         for exception in self.start_exceptions:
             if re.match(exception, stripped_line):
                 return
@@ -318,16 +313,39 @@ class HorizontalSpaceChecker:
 
 
     def count_errors(self, error_count):  
-        error_count["BlocksChecker"].append(f"Total Horizontal Spacing Errors: {self.error_count}")
+        error_count["HorizontalSpaceChecker"].append(f"Total Horizontal Spacing Errors: {self.error_count}")
 
 class VerticalSpaceChecker:
     def __init__(self):
         self.error_count = 0
-    def check_styles(self, line, stripped_line, line_count, output, error_count):
-    def count_errors(self, error_count):  
-        error_count["BlocksChecker"].append(f"Total Horizontal Spacing Errors: {self.error_count}")
+        self.last_line_type = None
+        self.newline_count = 0
+        self.last_line = None
 
-# class OrderCHecker
+    def check_styles(self, line, stripped_line, line_count, output):
+        if stripped_line == "":
+            self.newline_count += 1
+            self.last_line_type = None
+        else:
+            if re.match(r'^#include', stripped_line):
+                if self.last_line_type == "#include" and self.newline_count > 0:
+                    output["VerticalSpaceChecker"].append(f"Line {line_count-1}: Possible error. Check if directives are split by group.\nIncludes directive of the same group should not be separated with a new line. \n" + self.last_line)
+                self.last_line_type = "#include"
+
+            elif re.match(r'^#define', stripped_line):
+                if self.last_line_type == "#include" and self.newline_count != 1:
+                    output["VerticalSpaceChecker"].append(f"Line {line_count}: There should be one vertical space (newline) between the last #include and first #define \n" + self.last_line)
+                self.last_line_type = "#define"
+            elif self.last_line_type == "#define" and not re.match(r'(^#define|\n|"")', stripped_line):
+                output["VerticalSpaceChecker"].append(f"Line {line_count}: There should be one vertical space (newline) after the last #define \n" + self.last_line)
+                self.last_line_type = None
+            self.newline_count = 0
+
+        self.last_line = stripped_line
+            
+    def count_errors(self, error_count):  
+        error_count["VerticalSpaceChecker"].append(f"Total Vertical Spacing Errors: {self.error_count}")
+
 def file_checker(file_name):
     # Check file type
     if file_name[-2:] != ".c":
@@ -349,20 +367,19 @@ def main():
         # clear contents of out_file before appending info
         open(out_file_name, 'w').close()
         out_fd = open(out_file_name, "a")
-        output = {"NameCommentChecker": [], "IncludeDirectiveChecker": [], "NamingChecker": [], "BlocksChecker": [], "LineLengthChecker": [], "HorizontalSpaceChecker": [], "IndentationChecker": []}
-        error_count = {"NameCommentChecker": [],  "IncludeDirectiveChecker": [], "NamingChecker": [], "BlocksChecker": [], "LineLengthChecker": [], "HorizontalSpaceChecker": [], "IndentationChecker": []}
+        output = {"NameCommentChecker": [], "IncludeDirectiveChecker": [], "NamingChecker": [], "BlocksChecker": [], "LineLengthChecker": [], "HorizontalSpaceChecker": [], "VerticalSpaceChecker": [], "IndentationChecker": []}
+        error_count = {"NameCommentChecker": [],  "IncludeDirectiveChecker": [], "NamingChecker": [], "BlocksChecker": [], "LineLengthChecker": [], "HorizontalSpaceChecker": [], "VerticalSpaceChecker": [], "IndentationChecker": []}
 
-        # # checkers = [NameCommentChecker(), OrderChecker(), NamingChecker(), LineLengthChecker(), IncludeDirectiveChecker(), IndentationChecker(), BlocksChecker(), HorizontalSpaceChecker(), VerticalSpaceChecker()]
         name_comment_checker = NameCommentChecker()
         include_directive_checker = IncludeDirectiveChecker()
         naming_checker = NamingChecker()
         blocks_checker = BlocksChecker()
         line_length_checker = LineLengthChecker()
         horizontal_space_checker = HorizontalSpaceChecker()
+        vertical_space_checker = VerticalSpaceChecker()
         indentation_checker = IndentationChecker()
         
-
-        checkers = [name_comment_checker, include_directive_checker, naming_checker, blocks_checker, line_length_checker, horizontal_space_checker, indentation_checker]
+        checkers = [name_comment_checker, include_directive_checker, naming_checker, blocks_checker, line_length_checker, horizontal_space_checker, vertical_space_checker, indentation_checker]
 
         with open(file_name, "r") as user_fd:
             base_checker = BaseChecker(checkers)
@@ -382,6 +399,7 @@ def main():
                     out_fd.write(item + "\n\n")
                     
         print(f"Check complete! See the errors in ./{out_file_name}")
+        
     except ValueError as e:
         print(e)
     
