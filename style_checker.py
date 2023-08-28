@@ -244,11 +244,11 @@ class BlocksChecker:
 class HorizontalSpaceChecker:
     def __init__(self):
         self.error_count = 0
-        self.word_or_num =   r'(\w|\d)'
+        self.word_or_num =   r'[\w\d]'
         self.relational_op = r'(<=|==|!=|>=|(?<!<)<(?!<|=)|(?<!<)<(?!<|=)|(?<!>)>(?!>|))'
-        self.assignment_op = r'(\+\+|\+=|-=|\*=|/=|%=|&=|\|=|\^=|~=|<<=|>>=|(?<!\+)(?<!-)(?<!\*)(?<!/)(?<!%)(?<!&)(?<!\|)(?<!\^)(?<!~)(?<!<)(?<!>)(?<!<)(?<!>)(?<!=)=(?!=))'
+        self.assignment_op = r'(\+=|-=|\*=|/=|%=|&=|\|=|\^=|~=|<<=|>>=|(?<!\+)(?<!-)(?<!\*)(?<!/)(?<!%)(?<!&)(?<!\|)(?<!\^)(?<!~)(?<!<)(?<!>)(?<!<)(?<!>)(?<!=)=(?!=))'
         self.arithmetic_op = r'(?<!\+)\+(?!=)(?!\+)|(?<!\-)-(?!=)(?!-)'
-        self.logical_op =    r'(\&\&|\|\|)'
+        self.logical_op =   r'(\&\&|\|\|)'
         self.bitwise_op =   r'(?<!\|)\|(?!\|)|\^(?!=)|<<(?!=)|>>(?!=)'
         self.address_op =   r'(?<!&)&(?!&)'
         self.start_exceptions = [
@@ -260,7 +260,7 @@ class HorizontalSpaceChecker:
             r'scanf\s*\(\s*["\'](.*)["\']\s*\)'   # Ignore all text in a scan statement
         ]
         self.lr_spacing = {
-            # Check:            No space on either side | One or more space on the right | One or more space on the left
+            # Check:            No space on either side | No space on left | No space of right
             "relational":       (f'(?<!\s){self.relational_op}(?!\s)|(?<!\s){self.relational_op}\s+|\s+{self.relational_op}(?!\s)'),
             "assignment":       (f'(?<!\s){self.assignment_op}(?!\s)|(?<!\s){self.assignment_op}\s+|\s+{self.assignment_op}(?!\s)'),
             "arithmetic":       (f'(?<!\s){self.arithmetic_op}(?!\s)|(?<!\s){self.arithmetic_op}\s+|\s+{self.arithmetic_op}(?!\s)'),
@@ -270,21 +270,28 @@ class HorizontalSpaceChecker:
             "pointer":          (r'(?<!\s)\*+(?!\s)|(?<!\s)\*+\s+|\s+\*+(?!\s)'),
         }
         self.over_spacing = {
-            # Check:        Two or more space on the right | Two or more space on the left
-            "relational":       (f'(\w|\d)\s{{2,}}{self.relational_op}\s{{2,}}(\w|\d))'),
-            "assignment":       (f'(\w|\d)\s{{2,}}{self.assignment_op}\s{{2,}}(\w|\d))'),
-            "arithmetic":       (f'(\w|\d)\s{{2,}}{self.arithmetic_op}\s{{2,}}(\w|\d)'),
-            "logical":          (r'(\w|\d)\s{2,}(\&\&|\|\|)\s{2,}(\w|\d)'),
-            "bitwise":          (f'(\w|\d)\s{{2,}}{self.bitwise_op}\s{{2,}}(\w|\d)'),
+            # Check:            Two or more space on the right | Two or more space on the left
+            "relational":       (f'[\w\d]\s{{2,}}{self.relational_op}\s{{2,}}[\w\d]'),
+            "assignment":       (f'[\w\d]\s{{2,}}{self.assignment_op}\s{{2,}}[\w\d]'),
+            "arithmetic":       (f'[\w\d]\s{{2,}}{self.arithmetic_op}\s{{2,}}[\w\d]'),
+            "logical":          (r'[\w\d]\s{2,}(\&\&|\|\|)\s{2,}[\w\d]'),
+            "bitwise":          (f'[\w\d]\s{{2,}}{self.bitwise_op}\s{{2,}}[\w\d]'),
             "conds_loops":      (r'(if|else if|for|while|do)\s{2,}(\(|\{)'),
-            "pointer":          (r'(\w|\d)\s{2,}\*+\s{2,}(\w|\d)'),
+            "pointer":          (r'[\w\d]\s{2,}\*+\s{2,}[\w\d]')
         }
         self.other_rules = {
             "logical_not": (r'!\s+\w'),
-            "conds_loops": (r'(if|else if|for|while|do)(\(|\{)')   
+            "conds_loops": (r'(if|else if|for|while|do)(\(|\{)'),
+            "unary_ops":    (r'(?<![\w\d])(-|\~|\+\+|--)\s+[\w\d]'), 
+            "inside_paren": (r'[(\[]\s+|\s+[)\]]')
         }
-        self.spacing_rules = [self.lr_spacing]
-        # self.spacing_rules = [self.lr_spacing, self.over_spacing, self.other_rules]
+        self.other_comment = {
+            "logical_not": "Too many spaces between unary operator ! (logical not) and its operand",
+            "conds_loops": "There should be a space between ",
+            "unary_ops":   "Never insert a space between a unary operator and its operand", 
+            "inside_paren": "Never insert a space immediately inside a parenthesis or square bracket"
+        }
+        self.spacing_rules = [self.lr_spacing, self.over_spacing, self.other_rules]
 
     def check_styles(self, line, stripped_line, line_count, output, error_count):
         for exception in self.start_exceptions:
@@ -294,15 +301,18 @@ class HorizontalSpaceChecker:
             if re.search(exception, stripped_line):
                 return
 
-        for rule in self.spacing_rules:
-            for pattern_name, pattern in rule.items():
-                # if pattern_name == "last_op":
-                #     if re.search(f'\s{self.rel_assign_op}\s', line):
-                #         return
-                
+        for i in range(len(self.spacing_rules)):
+            for pattern_name, pattern in self.spacing_rules[i].items():
                 match = re.search(pattern, line)
                 if match:
-                    output["HorizontalSpaceChecker"].append(f"Line {line_count}: {match.group(0)}\n" + stripped_line)
+                    error_msg = f"Line {line_count}: "
+                    if i == 0:
+                        error_msg += f"No space on one or both sides of {match.group(0)}"
+                    elif i == 1:
+                        error_msg += f"Too many spaces before and after {match.group(0)}"
+                    else:
+                        error_msg += self.other_comment[pattern_name] + f"{match.group(0)}\nAlways insert one space between if (including else if), for, while, and do and the parenthesis or brace that follows"
+                    output["HorizontalSpaceChecker"].append(error_msg + "\n" + stripped_line)
                     self.error_count += 1
                 
 
@@ -311,8 +321,11 @@ class HorizontalSpaceChecker:
         error_count["BlocksChecker"].append(f"Total Horizontal Spacing Errors: {self.error_count}")
 
 class VerticalSpaceChecker:
-    def check_styles(self, user_fd, out_fd):
-      pass
+    def __init__(self):
+        self.error_count = 0
+    def check_styles(self, line, stripped_line, line_count, output, error_count):
+    def count_errors(self, error_count):  
+        error_count["BlocksChecker"].append(f"Total Horizontal Spacing Errors: {self.error_count}")
 
 # class OrderCHecker
 def file_checker(file_name):
