@@ -38,15 +38,15 @@ class NameCommentChecker:
 
         # Check for different cases
         if self.author_found and self.email_found and self.comment_found:
-            output["NameCommentChecker"].append(f"Line {line_count}: Name comment found")
+            output["NameCommentChecker"].append("Line "+ str(line_count) + ": Name comment found")
             self.comment_added = True
             return True
         if self.author_found and self.comment_found:
-            output["NameCommentChecker"].append(f"Line {line_count}: Name comment found, but email is missing")
+            output["NameCommentChecker"].append("Line "+ str(line_count) + ": Name comment found, but email is missing")
             self.comment_added = True
             return True
         if self.email_found and self.comment_found:
-            output["NameCommentChecker"].append(f"Line {line_count}: Name comment found, but did not include 'Author'")
+            output["NameCommentChecker"].append("Line "+ str(line_count) + ": Name comment found, but did not include 'Author'")
             self.comment_added = True
             return True
         if line_count == 10 and self.author_found == False and self.email_found == False and self.comment_found == False:
@@ -55,7 +55,7 @@ class NameCommentChecker:
     
     def count_errors(self, error_count):
         if self.comment_added:
-            error_count["NameCommentChecker"].append(f"Name Comment Errors: {self.error_count}")
+            error_count["NameCommentChecker"].append("Name Comment Errors: " + str(self.error_count))
         else:
             error_count["NameCommentChecker"].append("Name Comment Error: 1 Error - No Name Comment Found")
 
@@ -68,28 +68,28 @@ class NamingChecker:
         if struct_union_match:
             struct_union_name = struct_union_match.group(2)
             if not struct_union_name[0].isupper() or "_" in struct_union_name:
-                output["NamingChecker"].append(f"Line {line_count}: Struct/Union name '{struct_union_name}' should be in CamelCase \n" + stripped_line)
+                output["NamingChecker"].append("Line " + str(line_count) + ": Struct/Union name " + struct_union_name + " should be in CamelCase \n" + stripped_line)
                 self.error_count += 1
         
         func_match = re.match(r'\w+\s+([a-zA-Z_]+)\(', stripped_line)
         if func_match:
             func_name = func_match.group(1)
             if not func_name.islower():
-                output["NamingChecker"].append(f"Line {line_count}: Uppercase character found. Function name '{func_name}' should be in snake_case. \n" + stripped_line)
+                output["NamingChecker"].append("Line " + str(line_count) + ": Uppercase character found. Function name '" + func_name + "' should be in snake_case. \n" + stripped_line)
                 self.error_count += 1
 
             if len(func_name) > 7:
                 if not "_" in func_name:
-                    output["NamingChecker"].append(f"Line {line_count}: Long function name '{func_name}' with no underscore\nCheck if function name is really a single word that follows snake_case")
+                    output["NamingChecker"].append("Line" + str(line_count) + ": Long function name '" + func_name + "' with no underscore\nCheck if function name is really a single word that follows snake_case")
 
             # Check for single letter variables
             if len(func_name) == 1 and func_name not in ['i', 'j', 'k', 'n', 'm']:
-                    output["NamingChecker"].append(f"Line {line_count}: Single-letter variable '{func_name}' should not be used.")
+                    output["NamingChecker"].append("Line " + line_count + ": Single-letter variable '" + func_name + "' should not be used.")
                     self.error_count += 1
 
 
     def count_errors(self, error_count):   
-        error_count["NamingChecker"].append(f"Total Naming Errors: {self.error_count}")
+        error_count["NamingChecker"].append("Total Naming Errors: " + str(self.error_count))
    
 class LineLengthChecker:
     def __init__(self):
@@ -97,13 +97,13 @@ class LineLengthChecker:
 
     def check_styles(self, line, stripped_line, line_count, output):
         if len(line) > 120:
-            output["LineLengthChecker"].append(f"Line {line_count}: A single line should never exceed 120 characters in a line including indentation\n" + line.rstrip('\n'))
+            output["LineLengthChecker"].append("Line " + str(line_count) + ": A single line should never exceed 120 characters in a line including indentation\n" + line.rstrip('\n'))
             self.error_count += 1
         elif len(line) > 80:
-            output["LineLengthChecker"].append(f"Line {line_count}: Not an error, but try to avoid overlong lines. Keep it less than 80 characters including indentation. {len(line)} characters have been found in this line \n" + line.rstrip('\n'))
+            output["LineLengthChecker"].append("Line " + str(line_count) + ": Not an error, but try to avoid overlong lines. Keep it less than 80 characters including indentation. {len(line)} characters have been found in this line \n" + line.rstrip('\n'))
 
     def count_errors(self, error_count):
-        error_count["LineLengthChecker"].append(f"Total Line Length Errors: {self.error_count}")
+        error_count["LineLengthChecker"].append("Total Line Length Errors: " + str(self.error_count))
         
 class IncludeDirectiveChecker:
     def __init__(self):
@@ -120,7 +120,7 @@ class IncludeDirectiveChecker:
             return
         
         if stripped_line.startswith("#include <") and self.state == "custom":
-            output["IncludeDirectiveChecker"].append(f"Line {line_count} - Custom project headers should be after standard library headers")
+            output["IncludeDirectiveChecker"].append("Line " + str(line_count) + ": Custom project headers should be after standard library headers")
             self.std_headers.append(stripped_line)
             self.state = "standard"
             self.error_count += 1
@@ -141,7 +141,7 @@ class IncludeDirectiveChecker:
             self.error_count += 1
 
     def count_errors(self, error_count):
-        error_count["IncludeDirectiveChecker"].append(f"Total Include Directive Errors: {self.error_count}")
+        error_count["IncludeDirectiveChecker"].append("Total Include Directive Errors: " + str(self.error_count))
 
 class IndentationChecker:
     def __init__(self):
@@ -192,7 +192,7 @@ class IndentationChecker:
             return
 
     def count_errors(self, error_count):
-        error_count["IndentationChecker"].append(f"Total Indentation Errors: {self.error_count}")
+        error_count["IndentationChecker"].append("Total Indentation Errors: " + str(self.error_count))
 
 class BlocksChecker:
     def __init__(self):
@@ -211,30 +211,30 @@ class BlocksChecker:
             match = re.search(r'\btypedef\b\s+\w+\s+(\w+)', stripped_line)
             if match:
                 custom_type = match.group(1)
-                custom_type_pattern = rf'\b({custom_type})\s+\w+\s*\(.*\)\s*{{'
+                custom_type_pattern = r'\b(' + custom_type + r')\s+\w+\s*\(.*\)\s*{'
                 self.block_starters.append(custom_type_pattern)
 
         elif "{" in stripped_line:
             if stripped_line == "{":
-                output["BlocksChecker"].append(f"Line {line_count}: Opening curly brace should not be on a separate line \n{stripped_line}")
+                output["BlocksChecker"].append("Line " + str(line_count) + ": Opening curly brace should not be on a separate line \n" + stripped_line)
                 self.error_count += 1
             elif not any(re.search(pattern, line) for pattern in self.block_starters):
-                output["BlocksChecker"].append(f"Line {line_count}: Suspicious block start: {stripped_line}")
+                output["BlocksChecker"].append("Line " + str(line_count) + ": Suspicious block start: " + stripped_line)
                 self.error_count += 1
                 
             spacing_check = re.search(r'(\w|\))\s\{', stripped_line)
 
             if not spacing_check:
-                output["BlocksChecker"].append(f"Line {line_count}: Opening curly brace should be preceded by one space \n{stripped_line}")
+                output["BlocksChecker"].append("Line " + str(line_count) + ": Opening curly brace should be preceded by one space \n" + stripped_line)
                 self.error_count += 1
 
         if "}" in stripped_line:
             if not stripped_line.startswith("}") and not any(re.search(pattern, line) for pattern in self.block_starters):
-                output["BlocksChecker"].append(f"Line {line_count}: Closing curly brace should be on a separate line \n{stripped_line}")
+                output["BlocksChecker"].append("Line " + str(line_count) + ": Closing curly brace should be on a separate line \n" + stripped_line)
                 self.error_count += 1
 
     def count_errors(self, error_count):   
-        error_count["BlocksChecker"].append(f"Total Block Errors: {self.error_count}")
+        error_count["BlocksChecker"].append("Total Block Errors: " + str(self.error_count))
    
 class HorizontalSpaceChecker:
     def __init__(self):
@@ -256,29 +256,29 @@ class HorizontalSpaceChecker:
         ]
         self.lr_spacing = {
             # Check:            No space on either side | No space on left | No space of right
-            "relational":       (f'(?<!\s){self.relational_op}(?!\s)|(?<!\s){self.relational_op}\s+|\s+{self.relational_op}(?!\s)'),
-            "assignment":       (f'(?<!\s){self.assignment_op}(?!\s)|(?<!\s){self.assignment_op}\s+|\s+{self.assignment_op}(?!\s)'),
-            "arithmetic":       (f'(?<!\s){self.arithmetic_op}(?!\s)|(?<!\s){self.arithmetic_op}\s+|\s+{self.arithmetic_op}(?!\s)'),
-            "logical":          (f'(?<!\s){self.logical_op}(?!\s)|(?<!\s){self.logical_op}\s+|\s+{self.logical_op}(?!\s)'),
-            "bitwise":          (f'(?<!\s){self.bitwise_op}(?!\s)|(?<!\s){self.bitwise_op}\s+|\s+{self.bitwise_op}(?!\s)'),
-            "address_bit":      (f'(?<!\s){self.address_op}(?!\s)|(?<!\s){self.address_op}\s+'),
-            "pointer":          (r'(?<!\s)\*+(?!\s)|(?<!\s)\*+\s+|\s+\*+(?!\s)'),
+            "relational":       r'(?<!\s)' + self.relational_op + r'(?!\s)|(?<!\s)' + self.relational_op + r'\s+|\s+' + self.relational_op + r'(?!\s)',
+            "assignment":       r'(?<!\s)' + self.assignment_op + r'(?!\s)|(?<!\s)' + self.assignment_op + r'\s+|\s+' + self.assignment_op + r'(?!\s)',
+            "arithmetic":       r'(?<!\s)' + self.arithmetic_op + r'(?!\s)|(?<!\s)' + self.arithmetic_op + r'\s+|\s+' + self.arithmetic_op + r'(?!\s)',
+            "logical":          r'(?<!\s)' + self.logical_op + r'(?!\s)|(?<!\s)' + self.logical_op + r'\s+|\s+{self.logical_op}(?!\s)',
+            "bitwise":          r'(?<!\s)' + self.bitwise_op + r'(?!\s)|(?<!\s)' + self.bitwise_op + r'\s+|\s+{self.bitwise_op}(?!\s)',
+            "address_bit":      r'(?<!\s)' + self.address_op + r'(?!\s)|(?<!\s)' + self.address_op + r'\s+',
+            "pointer":          r'(?<!\s)\*+(?!\s)|(?<!\s)\*+\s+|\s+\*+(?!\s)',
         }
         self.over_spacing = {
             # Check:            Two or more space on the right | Two or more space on the left
-            "relational":       (f'[\w\d]\s{{2,}}{self.relational_op}\s{{2,}}[\w\d]'),
-            "assignment":       (f'[\w\d]\s{{2,}}{self.assignment_op}\s{{2,}}[\w\d]'),
-            "arithmetic":       (f'[\w\d]\s{{2,}}{self.arithmetic_op}\s{{2,}}[\w\d]'),
-            "logical":          (r'[\w\d]\s{2,}(\&\&|\|\|)\s{2,}[\w\d]'),
-            "bitwise":          (f'[\w\d]\s{{2,}}{self.bitwise_op}\s{{2,}}[\w\d]'),
-            "conds_loops":      (r'(if|else if|for|while|do)\s{2,}(\(|\{)'),
-            "pointer":          (r'[\w\d]\s{2,}\*+\s{2,}[\w\d]')
+            "relational":       r'[\w\d]\s{2,}' + re.escape(self.relational_op) + r'\s{2,}[\w\d]',
+            "assignment":       r'[\w\d]\s{2,}' + re.escape(self.assignment_op) + r'\s{2,}[\w\d]',
+            "arithmetic":       r'[\w\d]\s{2,}' + re.escape(self.arithmetic_op) + r'\s{2,}[\w\d]',
+            "logical":          r'[\w\d]\s{2,}(\&\&|\|\|)\s{2,}[\w\d]',
+            "bitwise":          r'[\w\d]\s{2,}' + re.escape(self.bitwise_op) + r'\s{2,}[\w\d]',
+            "conds_loops":      r'(if|else if|for|while|do)\s{2,}(\(|\{)',
+            "pointer":          r'[\w\d]\s{2,}\*+\s{2,}[\w\d]'
         }
         self.other_rules = {
-            "logical_not": (r'!\s+\w'),
-            "conds_loops": (r'(if|else if|for|while|do)(\(|\{)'),
-            "unary_ops":    (r'(?<![\w\d])(-|\~|\+\+|--)\s+[\w\d]'), 
-            "inside_paren": (r'[(\[]\s+|\s+[)\]]')
+            "logical_not":  r'!\s+\w',
+            "conds_loops":  r'(if|else if|for|while|do)(\(|\{)',
+            "unary_ops":    r'(?<![\w\d])(-|\~|\+\+|--)\s+[\w\d]', 
+            "inside_paren": r'[(\[]\s+|\s+[)\]]'
         }
         self.other_comment = {
             "logical_not": "Too many spaces between unary operator ! (logical not) and its operand",
@@ -300,20 +300,18 @@ class HorizontalSpaceChecker:
             for pattern_name, pattern in self.spacing_rules[i].items():
                 match = re.search(pattern, line)
                 if match:
-                    error_msg = f"Line {line_count}: "
+                    error_msg = "Line " + str(line_count) + ": "
                     if i == 0:
-                        error_msg += f"No space on one or both sides of {match.group(0)}"
+                        error_msg += ("No space on one or both sides of " + match.group(0))
                     elif i == 1:
-                        error_msg += f"Too many spaces before and after {match.group(0)}"
+                        error_msg += ("Too many spaces before and after" + match.group(0))
                     else:
-                        error_msg += self.other_comment[pattern_name] + f"{match.group(0)}\nAlways insert one space between if (including else if), for, while, and do and the parenthesis or brace that follows"
+                        error_msg += (self.other_comment[pattern_name] + match.group(0) + "\nAlways insert one space between if (including else if), for, while, and do and the parenthesis or brace that follows")
                     output["HorizontalSpaceChecker"].append(error_msg + "\n" + stripped_line)
                     self.error_count += 1
                 
-
-
     def count_errors(self, error_count):  
-        error_count["HorizontalSpaceChecker"].append(f"Total Horizontal Spacing Errors: {self.error_count}")
+        error_count["HorizontalSpaceChecker"].append("Total Horizontal Spacing Errors:" + str(self.error_count))
 
 class VerticalSpaceChecker:
     def __init__(self):
@@ -329,22 +327,22 @@ class VerticalSpaceChecker:
         else:
             if re.match(r'^#include', stripped_line):
                 if self.last_line_type == "#include" and self.newline_count > 0:
-                    output["VerticalSpaceChecker"].append(f"Line {line_count-1}: Possible error. Check if directives are split by group.\nIncludes directive of the same group should not be separated with a new line. \n" + self.last_line)
+                    output["VerticalSpaceChecker"].append("Line " + str(line_count-1) + ": Possible error. Check if directives are split by group.\nIncludes directive of the same group should not be separated with a new line. \n" + self.last_line)
                 self.last_line_type = "#include"
 
             elif re.match(r'^#define', stripped_line):
                 if self.last_line_type == "#include" and self.newline_count != 1:
-                    output["VerticalSpaceChecker"].append(f"Line {line_count}: There should be one vertical space (newline) between the last #include and first #define \n" + self.last_line)
+                    output["VerticalSpaceChecker"].append("Line" + str(line_count) + ": There should be one vertical space (newline) between the last #include and first #define \n" + self.last_line)
                 self.last_line_type = "#define"
             elif self.last_line_type == "#define" and not re.match(r'(^#define|\n|"")', stripped_line):
-                output["VerticalSpaceChecker"].append(f"Line {line_count}: There should be one vertical space (newline) after the last #define \n" + self.last_line)
+                output["VerticalSpaceChecker"].append("Line" + str(line_count) + ": There should be one vertical space (newline) after the last #define \n" + self.last_line)
                 self.last_line_type = None
             self.newline_count = 0
 
         self.last_line = stripped_line
             
     def count_errors(self, error_count):  
-        error_count["VerticalSpaceChecker"].append(f"Total Vertical Spacing Errors: {self.error_count}")
+        error_count["VerticalSpaceChecker"].append("Total Vertical Spacing Errors: " + str(self.error_count))
 
 def file_checker(file_name):
     # Check file type
@@ -359,7 +357,7 @@ def file_checker(file_name):
         raise ValueError("File not found")
     
 def main():
-    file_name = input("Enter the file name to parse: ")
+    file_name = raw_input("Enter the file name to parse: ").strip()
     try:
         file_checker(file_name)
         out_file_name = file_name[:-2] + "_style_info.txt"
@@ -398,8 +396,8 @@ def main():
                 for item in value_list:
                     out_fd.write(item + "\n\n")
                     
-        print(f"Check complete! See the errors in ./{out_file_name}")
-        
+        print("Check complete! See the errors in ./" + out_file_name)
+
     except ValueError as e:
         print(e)
     
