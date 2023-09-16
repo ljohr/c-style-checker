@@ -1,3 +1,5 @@
+from collections import OrderedDict
+import sys
 import re
 
 class BaseChecker:
@@ -100,7 +102,7 @@ class LineLengthChecker:
             output["LineLengthChecker"].append("Line " + str(line_count) + ": A single line should never exceed 120 characters in a line including indentation\n" + line.rstrip('\n'))
             self.error_count += 1
         elif len(line) > 80:
-            output["LineLengthChecker"].append("Line " + str(line_count) + ": Not an error, but try to avoid overlong lines. Keep it less than 80 characters including indentation. {len(line)} characters have been found in this line \n" + line.rstrip('\n'))
+            output["LineLengthChecker"].append("Line " + str(line_count) + ": Not an error, but try to avoid overlong lines.\nKeep it less than 80 characters including indentation. " + str(len(line)) + " characters have been found in this line \n" + line.rstrip('\n'))
 
     def count_errors(self, error_count):
         error_count["LineLengthChecker"].append("Total Line Length Errors: " + str(self.error_count))
@@ -158,6 +160,10 @@ class IndentationChecker:
             self.in_multiline_comment = True
         if stripped_line.endswith("*/"):
             self.in_multiline_comment = False
+            return
+        # Ignore lines within a comment block
+        if self.in_multiline_comment or stripped_line.startswith("//"):
+            return
         
         # Do not change indent count inside a switch statement
         if "switch" in stripped_line:
@@ -168,28 +174,25 @@ class IndentationChecker:
             self.switch_found = False
             self.case_found = False
 
-        # Ignore lines within a comment block
-        if self.in_multiline_comment or stripped_line.startswith("//"):
-            return
-        
         cur_indentation = line[:len(line) - len(line.lstrip())]
         if "}" in line:
             expected_indentation = "    " * (self.indentation_level - 1)
         else:
             expected_indentation = "    " * self.indentation_level
 
-        if cur_indentation != expected_indentation:
-            output["IndentationChecker"].append("Line " + str(line_count) + ": Not 4 spaces or wrong indentation level\n" + line.rstrip('\n'))
-            self.error_count += 1
-
         if "{" in line:
             self.indentation_level +=1
         if "}" in line:
             self.indentation_level -=1
+
         if "\t" in line:
             self.error_count += 1
             output["IndentationChecker"].append("Line " + str(line_count) + ": Tab found\n" + line.rstrip('\n'))
             return
+        
+        if cur_indentation != expected_indentation:
+            self.error_count += 1
+            output["IndentationChecker"].append("Line " + str(line_count) + ": Not 4 spaces or wrong indentation level.\n" + line.rstrip('\n'))
 
     def count_errors(self, error_count):
         error_count["IndentationChecker"].append("Total Indentation Errors: " + str(self.error_count))
@@ -202,7 +205,7 @@ class BlocksChecker:
         self.block_starters = [
             r'\b(if|else|for|while|do|switch)\b',
             r'\b(int|float|char|void|double|bool|long|short)\s+\w+\s*\(.*\)\s*{',
-            r'\b(const\s+)?\b(int|float|char|void|double|bool|long|short)(\s+\*|\s*)\s+\w+\s*\[\]',
+            r'\b(const\s+)?\b(int|float|char|void|double|bool|long|short)(\s+\*|\s*)\s+\w+(\s*\[\])?',
             r'\b(enum|struct)\s+\w+\s*{'
         ]
 
@@ -219,7 +222,7 @@ class BlocksChecker:
                 output["BlocksChecker"].append("Line " + str(line_count) + ": Opening curly brace should not be on a separate line \n" + stripped_line)
                 self.error_count += 1
             elif not any(re.search(pattern, line) for pattern in self.block_starters):
-                output["BlocksChecker"].append("Line " + str(line_count) + ": Suspicious block start: " + stripped_line)
+                output["BlocksChecker"].append("Line " + str(line_count) + ": Suspicious block start: \n" + stripped_line)
                 self.error_count += 1
                 
             spacing_check = re.search(r'(\w|\))\s\{', stripped_line)
@@ -240,11 +243,11 @@ class HorizontalSpaceChecker:
     def __init__(self):
         self.error_count = 0
         self.word_or_num =   r'[\w\d]'
-        self.relational_op = r'(<=|==|!=|>=|(?<!<)<(?!<|=)|(?<!<)<(?!<|=)|(?<!>)>(?!>|))'
-        self.assignment_op = r'(\+=|-=|\*=|/=|%=|&=|\|=|\^=|~=|<<=|>>=|(?<!\+)(?<!-)(?<!\*)(?<!/)(?<!%)(?<!&)(?<!\|)(?<!\^)(?<!~)(?<!<)(?<!>)(?<!<)(?<!>)(?<!=)=(?!=))'
-        self.arithmetic_op = r'(?<!\+)\+(?!=)(?!\+)|(?<!\-)-(?!=)(?!-)'
-        self.logical_op =   r'(\&\&|\|\|)'
-        self.bitwise_op =   r'(?<!\|)\|(?!\|)|\^(?!=)|<<(?!=)|>>(?!=)'
+        self.relational_op = r'((?<!<)<=|==|!=|(?<!>)>=|((?<!<)<(?!<)(?!=))|((?<!>)>(?!>)(?!=)))'
+        self.assignment_op = r'(\+=|-=|\*=|/=|%=|&=|\|=|\^=|~=|<<=|>>=|((?<!\+)(?<!-)(?<!\*)(?<!/)(?<!%)(?<!&)(?<!\|)(?<!\^)(?<!~)(?<!<)(?<!>)(?<!<)(?<!>)(?<!!)(?<!=)=(?!=)))'
+        self.arithmetic_op = r'(((?<!\+)\+(?!=)(?!\+))|((?<!\-)-(?!=)(?!-))|((?<!/)/(?!/)(?!=)))'
+        self.logical_op =   r'((\&\&)|(\|\|))'
+        self.bitwise_op =   r'((?<!\|)\|(?!\|))|(\^(?!=))|(<<(?!=))|(>>(?!=))'
         self.address_op =   r'(?<!&)&(?!&)'
         self.start_exceptions = [
             r'/\*', r'\*', r'#define', r'#include'
@@ -259,10 +262,10 @@ class HorizontalSpaceChecker:
             "relational":       r'(?<!\s)' + self.relational_op + r'(?!\s)|(?<!\s)' + self.relational_op + r'\s+|\s+' + self.relational_op + r'(?!\s)',
             "assignment":       r'(?<!\s)' + self.assignment_op + r'(?!\s)|(?<!\s)' + self.assignment_op + r'\s+|\s+' + self.assignment_op + r'(?!\s)',
             "arithmetic":       r'(?<!\s)' + self.arithmetic_op + r'(?!\s)|(?<!\s)' + self.arithmetic_op + r'\s+|\s+' + self.arithmetic_op + r'(?!\s)',
-            "logical":          r'(?<!\s)' + self.logical_op + r'(?!\s)|(?<!\s)' + self.logical_op + r'\s+|\s+{self.logical_op}(?!\s)',
-            "bitwise":          r'(?<!\s)' + self.bitwise_op + r'(?!\s)|(?<!\s)' + self.bitwise_op + r'\s+|\s+{self.bitwise_op}(?!\s)',
+            "logical":          r'(?<!\s)' + self.logical_op + r'(?!\s)|(?<!\s)' + self.logical_op + r'\s+|\s+' + self.logical_op + r'(?!\s)',
+            "bitwise":          r'(?<!\s)' + self.bitwise_op + r'(?!\s)|(?<!\s)' + self.bitwise_op + r'\s+|\s+' + self.bitwise_op + r'(?!\s)',
             "address_bit":      r'(?<!\s)' + self.address_op + r'(?!\s)|(?<!\s)' + self.address_op + r'\s+',
-            "pointer":          r'(?<!\s)\*+(?!\s)|(?<!\s)\*+\s+|\s+\*+(?!\s)',
+            "pointer":          r'(?<!\s)\*+(?!\s)|(?<!\s)\*+\s+|\s+\*+(?!\s)(?!=)',
         }
         self.over_spacing = {
             # Check:            Two or more space on the right | Two or more space on the left
@@ -272,12 +275,13 @@ class HorizontalSpaceChecker:
             "logical":          r'[\w\d]\s{2,}(\&\&|\|\|)\s{2,}[\w\d]',
             "bitwise":          r'[\w\d]\s{2,}' + re.escape(self.bitwise_op) + r'\s{2,}[\w\d]',
             "conds_loops":      r'(if|else if|for|while|do)\s{2,}(\(|\{)',
-            "pointer":          r'[\w\d]\s{2,}\*+\s{2,}[\w\d]'
+            "pointer":          r'(\s{2,}\*+\s*|\s*\*+\s{2,})'
+
         }
         self.other_rules = {
             "logical_not":  r'!\s+\w',
             "conds_loops":  r'(if|else if|for|while|do)(\(|\{)',
-            "unary_ops":    r'(?<![\w\d])(-|\~|\+\+|--)\s+[\w\d]', 
+            "unary_ops":    r'(?<![\w\d])(\~|\+\+|--)\s+[\w\d]', 
             "inside_paren": r'[(\[]\s+|\s+[)\]]'
         }
         self.other_comment = {
@@ -301,17 +305,28 @@ class HorizontalSpaceChecker:
                 match = re.search(pattern, line)
                 if match:
                     error_msg = "Line " + str(line_count) + ": "
+                    notify_fp = ""
+
+                    current_error = match.group(0).strip()
+                    stripped_error = current_error.strip()
+                    if stripped_error == "-":
+                        notify_fp += "\nCheck if error is a negative number. Could be a false positive."
+                    elif stripped_error == ">" or stripped_error == "<":
+                        notify_fp += "\nCheck if current error is a usage string. Could be a false positive."
+                    elif stripped_error == "*" or stripped_error == "/":
+                        notify_fp += "\nCheck if current error is an inline comment or type-cast. Could be a false positive."
+
                     if i == 0:
-                        error_msg += ("No space on one or both sides of " + match.group(0))
+                        error_msg += ("No space on one or both sides of " + current_error + notify_fp)
                     elif i == 1:
-                        error_msg += ("Too many spaces before and after" + match.group(0))
+                        error_msg += ("Too many spaces before and after" + current_error + notify_fp)
                     else:
-                        error_msg += (self.other_comment[pattern_name] + match.group(0) + "\nAlways insert one space between if (including else if), for, while, and do and the parenthesis or brace that follows")
+                        error_msg += (self.other_comment[pattern_name] + current_error + "\nAlways insert one space between if (including else if), for, while, and do and the parenthesis or brace that follows")
                     output["HorizontalSpaceChecker"].append(error_msg + "\n" + stripped_line)
                     self.error_count += 1
                 
     def count_errors(self, error_count):  
-        error_count["HorizontalSpaceChecker"].append("Total Horizontal Spacing Errors:" + str(self.error_count))
+        error_count["HorizontalSpaceChecker"].append("Total Horizontal Spacing Errors: " + str(self.error_count))
 
 class VerticalSpaceChecker:
     def __init__(self):
@@ -353,11 +368,16 @@ def file_checker(file_name):
     try:
       with open(file_name, "r") as user_fd:
           pass
-    except FileNotFoundError:
+    except Exception as e:
         raise ValueError("File not found")
     
 def main():
-    file_name = raw_input("Enter the file name to parse: ").strip()
+    if len(sys.argv) != 2:
+        print("Usage: python style_checker.py <file_name.c>")
+        return
+    
+    file_name = sys.argv[1].strip()
+
     try:
         file_checker(file_name)
         out_file_name = file_name[:-2] + "_style_info.txt"
@@ -365,8 +385,23 @@ def main():
         # clear contents of out_file before appending info
         open(out_file_name, 'w').close()
         out_fd = open(out_file_name, "a")
-        output = {"NameCommentChecker": [], "IncludeDirectiveChecker": [], "NamingChecker": [], "BlocksChecker": [], "LineLengthChecker": [], "HorizontalSpaceChecker": [], "VerticalSpaceChecker": [], "IndentationChecker": []}
-        error_count = {"NameCommentChecker": [],  "IncludeDirectiveChecker": [], "NamingChecker": [], "BlocksChecker": [], "LineLengthChecker": [], "HorizontalSpaceChecker": [], "VerticalSpaceChecker": [], "IndentationChecker": []}
+        output = OrderedDict([("NameCommentChecker", []), 
+                              ("IncludeDirectiveChecker", []), 
+                              ("NamingChecker", []), 
+                              ("BlocksChecker", []), 
+                              ("LineLengthChecker", ["Ignore if 80+ char error is caused by a necessary function declaration etc.",]), 
+                              ("HorizontalSpaceChecker", []), 
+                              ("VerticalSpaceChecker", []), 
+                              ("IndentationChecker", [])])
+        
+        error_count = OrderedDict([("NameCommentChecker", []),
+                                   ("IncludeDirectiveChecker", []), 
+                                   ("NamingChecker", []),
+                                   ("BlocksChecker", []), 
+                                   ("LineLengthChecker", []), 
+                                   ("HorizontalSpaceChecker", []), 
+                                   ("VerticalSpaceChecker", []), 
+                                   ("IndentationChecker", [])])
 
         name_comment_checker = NameCommentChecker()
         include_directive_checker = IncludeDirectiveChecker()
