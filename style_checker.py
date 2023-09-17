@@ -316,12 +316,13 @@ class HorizontalSpaceChecker:
                     elif stripped_error == "*" or stripped_error == "/":
                         notify_fp += "\nCheck if current error is an inline comment or type-cast. Could be a false positive."
 
-                    if i == 0:
+                    
+                    if i == 0: # self.spacing_rules[0] = self.lr_spacing
                         error_msg += ("No space on one or both sides of " + current_error + notify_fp)
-                    elif i == 1:
+                    elif i == 1: # self.spacing_rules[1] = self.over_spacing
                         error_msg += ("Too many spaces before and after" + current_error + notify_fp)
-                    else:
-                        error_msg += (self.other_comment[pattern_name] + current_error + "\nAlways insert one space between if (including else if), for, while, and do and the parenthesis or brace that follows")
+                    else: # self.spacing_rules[2] = self.other_rules
+                        error_msg += (self.other_comment[pattern_name] + current_error)
                     output["HorizontalSpaceChecker"].append(error_msg + "\n" + stripped_line)
                     self.error_count += 1
                 
