@@ -1,8 +1,11 @@
 # C Style Checker
-This is a python script which checks whether a C program conforms to the style guideline based on the Google C++ Style Guide, compiled by Professor Amittai Aviram at Boston College.
+This is a python script which checks whether a C program conforms to the style guideline found in the all_rules.txt file.
 
 ## Usage
 `python style_checker.py file_name.c`
+
+## Style Guide
+The styling guideline followed is specified in the all_rules.txt file which was based on the Google C++ Style Guide. The list of rules found in this text file have been written and compiled by Professor Amittai Aviram at Boston College. 
 
 ## Code Structure
 The code is organized eight styling checker classes, one main checker class (coordinates how styling checker classes are run), and a main section at the end (runs the script). 
@@ -50,6 +53,7 @@ Basic descriptions are provided by class, but please see All Rules section for a
 - Checks that one space character is inserted in the right positions
 - Checks that no space character is inserted in the right positions
 - Each condition is checked for using regular expressions organized by type
+- Note: negative numbers and the minus sign cannot be differentiated, so all negative numbers will be noted as an error (warning message provided)
 
 ### `VerticalSpaceChecker` Class
 - Checks that vertical spaces are provided in the right places
@@ -57,7 +61,7 @@ Basic descriptions are provided by class, but please see All Rules section for a
 ### `file_checker()` Function
 - Checks that file specified by the user is a C file and then checks if the file exists.
 
-## `main()` Section
+### `main()` Section
 - Runs the program
 - Organizes the output and error count into ordered dictionaries to preserve the specified order (Necessary as this program is made compatible with Python 2.7)
 - Style checkers are organized into an array
