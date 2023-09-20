@@ -1,0 +1,143 @@
+ 1. Headnote Comment
+    1. Every source code file must have a comment at the top serving as a headnote, demarcated in the C multiline comment form, with a border of asterisks on the right.
+    2. The headnote must minimally have an author declaration, with the word "Author:" followed by a space, and then your full name, followed by a space, a hyphen, another space, and your e-mail address (see the example below).
+    3. Optionally, at the top of the file containing your main function only, you may precede the author declaration with the name of your program (which need not be the name of the file) as a title, followed by a brief description of the program.
+
+/*
+ * WordCounter
+ * Prints an ordered list of the unique words in the text submitted on the command line,
+ * with the frequency count next to each word.
+ * Author: Amittai Aviram - example@example.edu
+ */
+
+2. Order of Items
+    1. Components of a source code file should appear in the following order:
+        1. Headnote comment
+        2. #include directives
+        3. #define directives
+        4. Structure, union, and enumeration type declarations, as well as type definitions using typedef (which may be combined with the type declarations)
+        5. Global variable declarations
+        6. Forward declarations
+        7. Function definitions.
+    2. Every item in the above list is optional, of course, except the headnote comment.
+
+3.Names
+    1. Names of structure and union types should use camel case and begin with a capital letter:
+
+    struct ProcessData {
+        unsigned char * start_address;
+        unsigned char * stack_start;
+        unsigned long code_segment_size;
+    };
+    2. All other names should use all lower-case characters in snake case (with the underscore character to separate words):
+
+    double mean_squared_error(int values, int num_values, double mean) {
+        // ....
+    }
+    3. Names should provide as much information as possible within a small space.  Avoid single-letter variable names, except for
+        1. Widely-used, conventional purposes such as iteration (index) variables i and j
+        2. Throwaway examples, not to be turned in—as in this document.
+
+4. Code Line Length
+    1. Avoid overlong lines of code.  Try not to exceed 80 characters in a line, including indentation.
+    2. Never exceed 120 characters in a line, including indentation.
+    3. If too many indentation levels make it difficult to avoid long lines, move your nested, indented code into a function and call it.
+5. Header #include Directives
+    1. Order of Groups
+        1. Standard Library headers, such as stdio..h and stdlib.h.
+        2. Custom project headers—the header files that you have created.
+    2. Separate the two groups with a single vertical space.
+    3. Within each group, arrange the #include directives in alphabetical order.
+    4. Example:
+
+    #include <math.h>
+    #include <stdio.h>
+    #include <stdlib.h>
+    5.
+    #include “numeric_helpers.h”
+    #include “text_helpers.h”
+
+6. Indentation
+    1. Never use the tab character for indentation.  Always use four spaces to indent by each indentation level.  Configure Vim or Gvim or whatever editor you use to enter four spaces when you hit the tab key, or when it automatically indents for you.
+
+7. Blocks
+    1. Every block always begins with an open curly brace and ends with a close curly brace.
+    2. In condition and loop bodies, always include the curly braces, even if the body consists of only a single statement.
+    3. In function definitions, conditional statement bodies, and loop bodies, always begin the block on the same line as the function signature (for functions) or the header (for conditions and loops).  Always end with a closing curly brace on a line by itself, in the type column directly below the first character of the function, condition, or loop.
+    4. Within the block, indent all code four spaces to the right relative to the previous indentation level.
+    5. Example:
+
+    double mean_squared_error(int values, int num_values, double mean) {
+        double squared_error_sum = 0.0;
+        for (int i = 0; i < num_values; ++i) {
+            double error = (double)values[i] - mean;
+            squared_error_sum += error * error;
+        }
+        return squared_error_sum / (double)num_values;
+    }
+
+8. Horizontal Spaces (Space Characters)
+    1. Always insert one horizontal space (space character)
+        1. Before and after a binary operator, including any assignment operator—
+            1. Arithmetic: + - * /
+            2. Bitwise: & | ^ << >>
+            3. Logical: && ||
+            4. Relational < <= == != >= >
+            5. Assignment: = += -= *= /= %= &= |= ^= ~= <<= >>=
+        2. Before and after the asterisk (*) in a pointer type declarator—
+
+        char * hello = "Hello!\n";
+        3.Between ! (logical not) and its operand:
+
+       if (! ready) {
+            printf("Not ready!\n");
+        }
+        4. Before the open curly brace of a block following a function signature or condition or loop header.
+        5. Before and after the ? and : of the ternary operator—
+
+        x = (a > b) ? a : b;
+        6. between the keywords if (including else if), for, while, and do and the parenthesis or brace that follows:
+
+        if (x < 10) {
+            // ...
+        }
+
+        7. Optionally, immediately inside curly braces used in an array initialization literal:
+
+        int nums[] = { 1, 2, 3, 4 };
+    2. Never insert a space—
+        1. Between a unary operator and its operand, except for ! (as noted above).  Such unary operators include, in particular—
+            1. The negative sign
+            2. Bitwise NOT
+            3. Prefix and postfix increment and decrement operators
+            4. The dereferencing asterisk (*)
+            5. The address-of operator &.
+
+            6. int neg_x = -x;
+            for (int i = 0, j = 10; i < 10; ++i, --j) {
+                printf("%d\n", z++);
+            }
+            int not_a = ~a;
+            int * value_ptr = &not_a;
+            int value = *value_ptr;
+
+        2.Immediately inside a parenthesis or square bracket:
+
+        int x = values[i];
+        3. Between a function name and the opening parenthesis of the argument list in a function definition or call:
+
+        int square(int x) {
+            return x * x;
+        }
+
+9. Vertical Spaces (Newline Characters)
+    1. There may be a single vertical space between groups of header #includes (e.g., system and project), but do not insert any vertical space between #include directives within a group.  In most cases, this means that you will simply insert no vertical spaces between #include directives at all.
+    2. Insert a single vertical space between the last #include directive and the first #define directive.
+    3. Insert a single vertical space between the last preprocessor directive (the last #define, if there is one, or else the last #include) and the first iine of the first function definition, forward declaration, or global variable declaration.
+    4. Global variable declarations, if there are any, should appear first, with no vertical spaces separating them.
+    5. Forward declarations should come next, if there are any, with a single vertical space between the globals and the forward declarations and no vertical space in the list of forward declarations.
+    6. Function definitions should follow, separated from whatever comes before them by a single vertical space.  Separate function defintions from each other with a single vertical space.
+
+10. Keep functions short.  Try to limit the work of a function to a single task.
+
+11. Avoid doing any work in main aside from initial parameter checking, delegation to other functions, and final output.
