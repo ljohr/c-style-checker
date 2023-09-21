@@ -67,7 +67,7 @@ Basic descriptions are provided by class, but please see All Rules section for a
 - Style checkers are organized into an array
 - The base_checker is called on the array of style checkers
 - The error messages (output dictionary) and error count are written to the output text file line by line
-- The output file take the format `user_file_style_info.txt`
+- For a given input file named 'user_file.c', the output file takes the format `user_file_style_info.txt`
 
 For a comprehensive list of all rules, please check the all_rules.txt file
 
