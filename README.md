@@ -1,6 +1,9 @@
 # C Style Checker
 This is a python script which checks whether a C program conforms to the style guideline found in the all_rules.txt file.
 
+## Demo
+https://github.com/ljohr/c-style-checker/assets/46297075/0f08dfbd-8292-49e4-baba-bffec11bac42
+
 ## Usage
 `python style_checker.py file_name.c`
 
@@ -70,6 +73,3 @@ Basic descriptions are provided by class, but please see All Rules section for a
 - For a given input file named `user_file.c`, the output file takes the format `user_file_style_info.txt`
 
 For a comprehensive list of all rules, please check the all_rules.txt file
-
-## Demo
-https://github.com/ljohr/c-style-checker/assets/46297075/0f08dfbd-8292-49e4-baba-bffec11bac42
